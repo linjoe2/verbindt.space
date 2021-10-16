@@ -129,8 +129,8 @@ app.post('/versturen', async (req, res) => {
     ],
     mode: 'payment',
     customer_email: data.email,
-    success_url: `http://192.168.0.138:4242`,
-    cancel_url: `https://verbindt.space/cancel`,
+    success_url: `https://verbindt.space`,
+    cancel_url: `https://verbindt.space`,
   });
   console.log(session.payment_intent)
   data.pi = session.payment_intent
