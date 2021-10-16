@@ -64,25 +64,34 @@ app.get('/rooster', async (req,res)=>{
 app.get('/boekingen', async (req,res)=>{
 
   await fs.readFile('./boekingen.json', 'utf8', (err, data) => {
-  
+      let boekingResponse = []
       if (err) {
           console.log(`Error reading file from disk: ${err}`);
       } else {
   
           // parse JSON string to JSON object
           const bookingen = JSON.parse(data);
-  
+          const today = new Date()
+          
           // print all databases
           bookingen.forEach(boeking => {
-              console.log(`${boeking.naam}: ${boeking.tijd}`);
               boeking.tijd = new Date(boeking.tijd)
-              boeking.tijd = boeking.tijd.getHours() + ':'+boeking.tijd.getMinutes()
+              console.log(`${boeking.naam}: ${boeking.tijd}`);
               boeking.email = ''
               boeking.telefoon = ''
               boeking.pi = ''
+
+              if(boeking.tijd.getDate() === today.getDate() &&
+              boeking.tijd.getMonth() === today.getMonth() &&
+              boeking.tijd.getFullYear() === today.getFullYear()){
+                boeking.tijd = boeking.tijd.getHours() + ':'+boeking.tijd.getMinutes()
+                boekingResponse.push(boeking)
+              }
+              
+              
           });
           
-          res.send(JSON.stringify(bookingen))
+          res.send(JSON.stringify(boekingResponse))
       }
   
   })
