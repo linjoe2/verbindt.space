@@ -77,7 +77,11 @@ app.get('/boekingen', async (req,res)=>{
               console.log(`${boeking.naam}: ${boeking.tijd}`);
               boeking.tijd = new Date(boeking.tijd)
               boeking.tijd = boeking.tijd.getHours() + ':'+boeking.tijd.getMinutes()
+              boeking.email = ''
+              boeking.telefoon = ''
+              boeking.pi = ''
           });
+          
           res.send(JSON.stringify(bookingen))
       }
   
