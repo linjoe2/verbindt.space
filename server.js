@@ -8,6 +8,7 @@ app.use(express.urlencoded({ extended: true }));
 
 
 let bookingen = [{tijd: Date.now(), naam: "lindsey", minuten: 15}];
+let wachtrij = []
 app.use(express.static('public'));
 app.use('/rooster',(req, res, next) => {
 
@@ -49,7 +50,9 @@ app.get('/rooster', async (req,res)=>{
         
         let table = "<table><tr><th>tijd</th><th>naam</th><th>minuten</th><th>telefooon</th><th>email</th></tr>"
         bookingen.forEach((boeking) => {
-          table += `<td>${boeking.tijd}</td><td>${boeking.naam}</td><td>${boeking.minuten}</td><td>${boeking.telefoon}</td><td>${boeking.email}</td>`
+          boeking.tijd = new Date(boeking.tijd)
+          boeking.tijd = boeking.tijd.getHours() + ':'+boeking.tijd.getMinutes()
+          table += `<tr><td>${boeking.tijd}</td><td>${boeking.naam}</td><td>${boeking.minuten}</td><td>${boeking.telefoon}</td><td>${boeking.email}</td></tr>`
         })
         table += "</table>"
         res.send(table)
@@ -72,6 +75,8 @@ app.get('/boekingen', async (req,res)=>{
           // print all databases
           bookingen.forEach(boeking => {
               console.log(`${boeking.naam}: ${boeking.tijd}`);
+              boeking.tijd = new Date(boeking.tijd)
+              boeking.tijd = boeking.tijd.getHours() + ':'+boeking.tijd.getMinutes()
           });
           res.send(JSON.stringify(bookingen))
       }
@@ -124,11 +129,13 @@ app.post('/versturen', async (req, res) => {
     ],
     mode: 'payment',
     customer_email: data.email,
-    metadata: data,
     success_url: `http://192.168.0.138:4242`,
     cancel_url: `https://verbindt.space/cancel`,
   });
-  console.log(session.url)
+  console.log(session.payment_intent)
+  data.pi = session.payment_intent
+  wachtrij.push(data)
+  console.log(wachtrij)
   res.send(JSON.stringify({"url":session.url}))
   //res.redirect(303, session.url)
 });
@@ -137,13 +144,49 @@ app.post('/versturen', async (req, res) => {
 app.post('/webhook', express.json({type: 'application/json'}), (request, response) => {
   const event = request.body;
 
+  console.log(event)
+
   // Handle the event
   switch (event.type) {
     case 'payment_intent.succeeded':
       const paymentIntent = event.data.object;
       // Then define and call a method to handle the successful payment intent.
       // handlePaymentIntentSucceeded(paymentIntent);
-      console.log(paymentIntent)
+      console.log(paymentIntent.id)
+
+      fs.readFile('./boekingen.json', 'utf8', (err, data) => {
+
+        if (err) {
+            console.log(`Error reading file from disk: ${err}`);
+        } else {
+    
+            // parse JSON string to JSON object
+            const boekingen = JSON.parse(data);
+
+
+            wachtrij.forEach(item =>{
+              console.log(item.pi)
+              if(item.pi == paymentIntent.id){
+                boekingen.push(item)
+                fs.writeFile('./boekingen.json', JSON.stringify(boekingen, null, 4), (err) => {
+                      if (err) {
+                          console.log(`Error writing file: ${err}`);
+                      }
+                  });
+              }
+            })
+            
+            // // add a new record
+            // boekingen.push(paymentIntent.metadata);
+    
+            // // write new data back to the file
+            // fs.writeFile('./boekingen.json', JSON.stringify(boekingen, null, 4), (err) => {
+            //     if (err) {
+            //         console.log(`Error writing file: ${err}`);
+            //     }
+            // });
+        }
+      })
       break;
     case 'payment_method.attached':
       const paymentMethod = event.data.object;

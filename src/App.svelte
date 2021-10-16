@@ -6,40 +6,24 @@
     RadioGroup,
     Modal,
     Dialog,
-	TextField
+	  TextField,
+    Divider,
+    Table
   } from "attractions";
-  import SvelteTable from "svelte-table";
 	import { onMount } from 'svelte';
-
+  var emailVal = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+  var telefoonVal = /^\(?([0-9]{3})\)?[-. ]?([0-9]{3})[-. ]?([0-9]{4})$/;
   import {verstuur} from "./api";
   export let name;
-  let tijd, naam, body, email = "ik@lindseyschaap.nl", telefoon, minuten, modalOpen, prijs;
+  let tijd = new Date(Date.now()), naam, body, email = "", telefoon, minuten = 15, modalOpen, prijs;
 
 
   let rows = [
   ];
   const columns = [
-    {
-    key: "tijd",
-    title: "Tijd",
-    value: v => {
-      let time = new Date(v.tijd)
-      return time.getHours()+ ":"+ time.getMinutes();
-    },
-    sortable: true,
-  },
-  {
-    key: "Naam",
-    title: "name",
-    value: v => v.naam,
-    sortable: true,
-  },
-  {
-    key: "minuten",
-    title: "Minuten",
-    value: v => v.minuten,
-    sortable: true,
-  },
+    { text: 'naam', value: 'naam' },
+    { text: 'tijd', value: 'tijd' },
+    { text: 'minuten', value: 'minuten', align: 'end' },
   ];
 
   onMount(async () => {
@@ -64,11 +48,32 @@
       "telefoon": telefoon,
       "prijs": prijs
     };
-
-    verstuur(body)
+    if(checkData(body)){
+      verstuur(body)
+    }
   }
 
-  function betaal() {}
+  function checkData(body){
+    if(!!!body.minuten){
+      alert("vul minuten in")
+      return false
+    }
+    if(!!!body.naam){
+      alert("vul naam in")
+      return false
+    }
+    if(!emailVal.exec(body.email)){
+      alert("vul email in")
+      return false
+    }
+    if(!telefoonVal.exec(body.telefoon)){
+
+        alert("vul telefoonnummer in")
+        return false
+
+    }
+    return true
+  }
 
   const items = [
     { value: 10, label: '10 Minuten', price: 20 },
@@ -79,9 +84,9 @@
 
 <main>
   <div class="centerdiv">
-    <h2>Rooster</h2>
-  <SvelteTable columns="{columns}" rows="{rows}"></SvelteTable>
-    <h1>Bestel hier uw massage!</h1>
+    <Divider text="Massage rooster" />
+  <Table id="table" headers="{columns}" items="{rows}"/>
+  <Divider text="Bestel hier uw massage!" />
     <FormField
   name="Aantal minuten"
   required
@@ -121,13 +126,6 @@
     </FormField>
     <Button on:click={verstuurSender} filled>Boeken</Button>
   </div>
-  <Modal bind:open={modalOpen} let:closeCallback>
-    <Dialog title="Booking geslaagd" {closeCallback}>
-      Je staat ingeplaned om: {tijd} <br>
-      Kosten: {prijs}
-      <Button on:click={betaal} filled>Afrekenen</Button>
-    </Dialog>
-  </Modal>
 </main>
 
 <style>
@@ -138,12 +136,8 @@
     margin: 0 auto;
   }
 
-  h1 {
-    color: #ff3e00;
-    text-transform: uppercase;
-    font-size: 4em;
-    font-weight: 100;
-  }
+
+
 
   @media (min-width: 640px) {
     main {
